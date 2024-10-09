@@ -61,13 +61,10 @@ function runPythonCode(code: string, editor: vscode.TextEditor) {
     } else {
 	// Execute the single-line code snippet
 		const escapedCodeSnippet = codeSnippet.replace(/^\s+/gm, '\t').replace(/"/g, "'");
-		console.log(escapedCodeSnippet);
 		const command = `python3 -c "${escapedCodeSnippet.trim()}"`;
 		exec(command, (error, stdout, stderr) => {
 			if (error || stderr) {
-				console.log(error);
 				const errorMessage = stderr.split('\n').filter(line => line.trim() !== '').pop() || (error ? error.message : '');
-				console.log(errorMessage);
 				displayInlineOutput(errorMessage, editor);
 			} else {
 				displayInlineOutput(stdout, editor);
@@ -79,6 +76,9 @@ function runPythonCode(code: string, editor: vscode.TextEditor) {
 // Function to display inline results in the editor
 function displayInlineOutput(output: string, editor: vscode.TextEditor) {
     const cursorPosition = editor.selection.active;
+	const line = editor.document.lineAt(cursorPosition.line);
+    const endOfLine = line.range.end;
+    const range = new vscode.Range(endOfLine, endOfLine);
 
     // Clear the previous decoration if it exists
     if (currentDecorationType) {
@@ -97,7 +97,7 @@ function displayInlineOutput(output: string, editor: vscode.TextEditor) {
 
     // Create a decoration for the current line at the cursor position
     const decoration = {
-        range: new vscode.Range(cursorPosition, cursorPosition),
+        range: range,
         renderOptions: {
             after: {
                 contentText: ` # ${output.trim()}`,
