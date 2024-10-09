@@ -59,15 +59,21 @@ function runPythonCode(code: string, editor: vscode.TextEditor) {
             fs.unlinkSync(tempFilePath);
         });
     } else {
-        // Execute the single-line code snippet
-        exec(`python3 -c "${codeSnippet.replace(/"/g, '\\"')}"`, (error, stdout, stderr) => {
-            if (error || stderr) {
-                displayInlineOutput(stderr || (error ? error.message : ''), editor);
-            } else {
-                displayInlineOutput(stdout, editor);
-            }
-        });
-    }
+	// Execute the single-line code snippet
+		const escapedCodeSnippet = codeSnippet.replace(/^\s+/gm, '\t').replace(/"/g, "'");
+		console.log(escapedCodeSnippet);
+		const command = `python3 -c "${escapedCodeSnippet.trim()}"`;
+		exec(command, (error, stdout, stderr) => {
+			if (error || stderr) {
+				console.log(error);
+				const errorMessage = stderr.split('\n').filter(line => line.trim() !== '').pop() || (error ? error.message : '');
+				console.log(errorMessage);
+				displayInlineOutput(errorMessage, editor);
+			} else {
+				displayInlineOutput(stdout, editor);
+			}
+		});
+	}
 }
 
 // Function to display inline results in the editor
@@ -83,7 +89,7 @@ function displayInlineOutput(output: string, editor: vscode.TextEditor) {
     // Define a new decoration type with greyed-out text
     currentDecorationType = vscode.window.createTextEditorDecorationType({
         after: {
-            contentText: ` # Hello Friend: ${output.trim()}`,
+            contentText: ` # ${output.trim()}`,
             color: 'grey',
             margin: '0 0 0 1em'
         }
@@ -94,7 +100,7 @@ function displayInlineOutput(output: string, editor: vscode.TextEditor) {
         range: new vscode.Range(cursorPosition, cursorPosition),
         renderOptions: {
             after: {
-                contentText: ` # Hello Friend: ${output.trim()}`,
+                contentText: ` # ${output.trim()}`,
                 color: 'grey'
             }
         }
