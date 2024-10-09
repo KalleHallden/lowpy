@@ -38,9 +38,28 @@ function runPythonCode(code: string, editor: vscode.TextEditor) {
 
     // Extract the relevant code snippet (current line or selection)
     const cursorPosition = editor.selection.active;
-    const currentLine = editor.document.lineAt(cursorPosition.line).text;
-    const codeSnippet = editor.selection.isEmpty ? currentLine : code;
+	let linesAboveCursor = [];
 
+	// Temporary solution to get the code snippet above the cursor 
+	// But only for the current function
+	for (let i = 0; i <= cursorPosition.line; i++) {
+		const lineText = editor.document.lineAt(i).text;
+		const functions = lineText.match(/^\s*def\s+\w+\s*\(.*\)\s*:/);
+		if (functions) {
+			linesAboveCursor = [];
+		} else {
+			linesAboveCursor.push(lineText.trim());
+		}
+	}
+
+	const codeSnippet = linesAboveCursor.join('\n');
+	console.log(codeSnippet);
+
+	const functionMatch = codeSnippet.match(/def\s+(\w+)\s*\(.*\)\s*:/);
+	if (functionMatch) {
+		const functionName = functionMatch[1];
+		//console.log(functionName);
+	}
     // Check if the code snippet is multi-line
     if (codeSnippet.includes('\n')) {
         // Write the code snippet to a temporary file
