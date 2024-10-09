@@ -1,71 +1,45 @@
-# lowpy README
+# Lowpy
 
-This is the README for your extension "lowpy". After writing up a brief description, we recommend including the following sections.
+[![Build Status](https://img.shields.io/github/workflow/status/kallehallden/lowpy/CI)](https://github.com/kallehallden/lowpy/actions)
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+
+Lowpy is a **Visual Studio Code extension** that provides **live feedback** on Python code execution. With Lowpy, you can instantly see the results of your code execution inline, making it easier to debug, test, and iterate faster.
 
 ## Features
 
-Describe specific features of your extension including screenshots of your extension in action. Image paths are relative to this README file.
+- **Live Execution**: Get instant feedback as you write Python code. Lowpy evaluates code on the fly and displays the results in your editor.
 
-For example if there is an image subfolder under your extension project workspace:
+## Roadmap/Goals
+- **Inline Results**: Results of expressions, variables, and function calls are displayed inline in the code, so you don’t have to leave the editor to check the output.
+- **Context Awareness**: Keep track of global and local variables, function definitions, and scopes as you write code, ensuring accurate evaluation of complex programs.
+- **Efficient Execution**: Optimize code execution by running only the necessary parts of the code, avoiding unnecessary recomputation.
 
-\!\[feature X\]\(images/feature-x.png\)
+## Contributing
 
-> Tip: Many popular extensions utilize animations. This is an excellent way to show off your extension! We recommend short, focused animations that are easy to follow.
+We welcome contributions to improve Lowpy! Here’s how you can get started:
 
-## Requirements
+1. Fork the repository and clone it locally:
+   ```bash
+   git clone https://github.com/kallehallden/lowpy.git
+   ```
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Open the project in Visual Studio Code and start developing.
+4. Make your changes and submit a pull request.
 
-If you have any requirements or dependencies, add a section describing those and how to install and configure them.
+## License
 
-## Extension Settings
+This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for details.
 
-Include if your extension adds any VS Code settings through the `contributes.configuration` extension point.
+## Acknowledgements
 
-For example:
+- Inspired by [Quokka.js](https://quokkajs.com/) for JavaScript
+- Built using the [VS Code API](https://code.visualstudio.com/api) and [Python](https://www.python.org/)
 
-This extension contributes the following settings:
+## Contact
 
-* `myExtension.enable`: Enable/disable this extension.
-* `myExtension.thing`: Set to `blah` to do something.
+For any questions, issues, or suggestions, feel free to reach out or open an issue on GitHub.
 
-## Known Issues
 
-Calling out known issues can help limit users opening duplicate issues against your extension.
-
-## Release Notes
-
-Users appreciate release notes as you update your extension.
-
-### 1.0.0
-
-Initial release of ...
-
-### 1.0.1
-
-Fixed issue #.
-
-### 1.1.0
-
-Added features X, Y, and Z.
-
----
-
-## Following extension guidelines
-
-Ensure that you've read through the extensions guidelines and follow the best practices for creating your extension.
-
-* [Extension Guidelines](https://code.visualstudio.com/api/references/extension-guidelines)
-
-## Working with Markdown
-
-You can author your README using Visual Studio Code. Here are some useful editor keyboard shortcuts:
-
-* Split the editor (`Cmd+\` on macOS or `Ctrl+\` on Windows and Linux).
-* Toggle preview (`Shift+Cmd+V` on macOS or `Shift+Ctrl+V` on Windows and Linux).
-* Press `Ctrl+Space` (Windows, Linux, macOS) to see a list of Markdown snippets.
-
-## For more information
-
-* [Visual Studio Code's Markdown Support](http://code.visualstudio.com/docs/languages/markdown)
-* [Markdown Syntax Reference](https://help.github.com/articles/markdown-basics/)
-
-**Enjoy!**
