@@ -52,43 +52,51 @@ function runPythonCode(code: string, editor: vscode.TextEditor) {
 		}
 	}
 
-	const codeSnippet = linesAboveCursor.join('\n');
-	console.log(codeSnippet);
-
-	const functionMatch = codeSnippet.match(/def\s+(\w+)\s*\(.*\)\s*:/);
-	if (functionMatch) {
-		const functionName = functionMatch[1];
-		//console.log(functionName);
-	}
-    // Check if the code snippet is multi-line
-    if (codeSnippet.includes('\n')) {
-        // Write the code snippet to a temporary file
-        const tempFilePath = path.join(__dirname, 'temp.py');
-        fs.writeFileSync(tempFilePath, codeSnippet);
-
-        // Execute the code snippet from the temporary file
-        exec(`python3 "${tempFilePath}"`, (error, stdout, stderr) => {
-            if (error || stderr) {
-                displayInlineOutput(stderr || (error ? error.message : ''), editor);
-            } else {
-                displayInlineOutput(stdout, editor);
-            }
-
-            // Clean up the temporary file
-            fs.unlinkSync(tempFilePath);
-        });
+	// Check if the line that the cursor is on is empty
+    const currentLineText = editor.document.lineAt(cursorPosition.line).text;
+	let isEmpty = false;
+    if (!currentLineText.trim()) {
+        isEmpty = true;
+		displayInlineOutput("", editor);
     } else {
-	// Execute the single-line code snippet
-		const escapedCodeSnippet = codeSnippet.replace(/^\s+/gm, '\t').replace(/"/g, "'");
-		const command = `python3 -c "${escapedCodeSnippet.trim()}"`;
-		exec(command, (error, stdout, stderr) => {
-			if (error || stderr) {
-				const errorMessage = stderr.split('\n').filter(line => line.trim() !== '').pop() || (error ? error.message : '');
-				displayInlineOutput(errorMessage, editor);
-			} else {
-				displayInlineOutput(stdout, editor);
-			}
-		});
+		const codeSnippet = linesAboveCursor.join('\n');
+		console.log(codeSnippet);
+	
+		const functionMatch = codeSnippet.match(/def\s+(\w+)\s*\(.*\)\s*:/);
+		if (functionMatch) {
+			const functionName = functionMatch[1];
+			//console.log(functionName);
+		}
+		// Check if the code snippet is multi-line
+		if (codeSnippet.includes('\n')) {
+			// Write the code snippet to a temporary file
+			const tempFilePath = path.join(__dirname, 'temp.py');
+			fs.writeFileSync(tempFilePath, codeSnippet);
+	
+			// Execute the code snippet from the temporary file
+			exec(`python3 "${tempFilePath}"`, (error, stdout, stderr) => {
+				if (error || stderr) {
+					displayInlineOutput(stderr || (error ? error.message : ''), editor);
+				} else {
+					displayInlineOutput(stdout, editor);
+				}
+	
+				// Clean up the temporary file
+				fs.unlinkSync(tempFilePath);
+			});
+		} else {
+		// Execute the single-line code snippet
+			const escapedCodeSnippet = codeSnippet.replace(/^\s+/gm, '\t').replace(/"/g, "'");
+			const command = `python3 -c "${escapedCodeSnippet.trim()}"`;
+			exec(command, (error, stdout, stderr) => {
+				if (error || stderr) {
+					const errorMessage = stderr.split('\n').filter(line => line.trim() !== '').pop() || (error ? error.message : '');
+					displayInlineOutput(errorMessage, editor);
+				} else {
+					displayInlineOutput(stdout, editor);
+				}
+			});
+		}
 	}
 }
 
@@ -124,9 +132,12 @@ function displayInlineOutput(output: string, editor: vscode.TextEditor) {
             }
         }
     };
-
+	if (output !== "") {
     // Apply the decoration to the editor
     editor.setDecorations(currentDecorationType, [decoration]);
+	} else {
+		editor.setDecorations(currentDecorationType, []);
+	}
 }
 
 function deactivate() {
