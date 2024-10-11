@@ -60,7 +60,6 @@ function runPythonCode(code: string, editor: vscode.TextEditor) {
 		displayInlineOutput("", editor);
     } else {
 		const codeSnippet = linesAboveCursor.join('\n');
-		console.log(codeSnippet);
 	
 		const functionMatch = codeSnippet.match(/def\s+(\w+)\s*\(.*\)\s*:/);
 		if (functionMatch) {
@@ -107,6 +106,10 @@ function displayInlineOutput(output: string, editor: vscode.TextEditor) {
     const endOfLine = line.range.end;
     const range = new vscode.Range(endOfLine, endOfLine);
 
+	// Split the output by newlines and filter out empty lines
+	const outputLines = output.split('\n').filter(line => line.trim() !== '');
+	const mostRecentOutput = outputLines.pop() || '';
+
     // Clear the previous decoration if it exists
     if (currentDecorationType) {
         editor.setDecorations(currentDecorationType, []);
@@ -116,7 +119,7 @@ function displayInlineOutput(output: string, editor: vscode.TextEditor) {
     // Define a new decoration type with greyed-out text
     currentDecorationType = vscode.window.createTextEditorDecorationType({
         after: {
-            contentText: ` # ${output.trim()}`,
+            contentText: ` # ${mostRecentOutput.trim()}`,
             color: 'grey',
             margin: '0 0 0 1em'
         }
@@ -127,7 +130,7 @@ function displayInlineOutput(output: string, editor: vscode.TextEditor) {
         range: range,
         renderOptions: {
             after: {
-                contentText: ` # ${output.trim()}`,
+                contentText: ` # ${mostRecentOutput.trim()}`,
                 color: 'grey'
             }
         }

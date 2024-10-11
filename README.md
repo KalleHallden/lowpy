@@ -9,10 +9,11 @@ Lowpy is a **Visual Studio Code extension** that provides **live feedback** on P
 
 - **Live Execution**: Get instant feedback as you write Python code. Lowpy evaluates code on the fly and displays the results in your editor.
 
-## Roadmap/Goals
+## TODO:
 - **Inline Results**: Results of expressions, variables, and function calls are displayed inline in the code, so you don’t have to leave the editor to check the output.
 - **Context Awareness**: Keep track of global and local variables, function definitions, and scopes as you write code, ensuring accurate evaluation of complex programs.
 - **Efficient Execution**: Optimize code execution by running only the necessary parts of the code, avoiding unnecessary recomputation.
+- **Basic math inline execution**: Make sure that even statements like: test = 2 * 2, should give an inline output of # 4
 
 ## Contributing
 
