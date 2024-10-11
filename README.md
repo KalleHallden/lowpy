@@ -5,7 +5,7 @@
 
 Lowpy is a **Visual Studio Code extension** that provides **live feedback** on Python code execution. With Lowpy, you can instantly see the results of your code execution inline, making it easier to debug, test, and iterate faster.
 
-## Features
+## Features 
 
 - **Live Execution**: Get instant feedback as you write Python code. Lowpy evaluates code on the fly and displays the results in your editor.
 
