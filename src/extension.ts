@@ -4,111 +4,107 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 let currentDecorationType: vscode.TextEditorDecorationType | undefined;
+let timeout: NodeJS.Timeout | undefined;
 
 function activate(context: vscode.ExtensionContext) {
     console.log('Python Live Execution Extension is now active!');
-    let timeout: NodeJS.Timeout;
 
-    // Subscribe to text document change events (triggered every time the document is edited)
+    // Subscribe to text document change events and selection change events
     let disposable = vscode.workspace.onDidChangeTextDocument((event) => {
         const editor = vscode.window.activeTextEditor;
-        clearTimeout(timeout); // Clear any existing timeout to reset the timer
-
-        timeout = setTimeout(() => {
-            if (editor && event.document === editor.document) {
-                // Get the entire document content (you could also limit this to the active line or selection)
-                const documentText = editor.document.getText();
-                const selectedText = editor.document.getText(editor.selection);
-
-                // Run the Python code
-                runPythonCode(selectedText || documentText, editor);
-            }
-        }, 300);
+        if (editor && event.document === editor.document) {
+            updateOutput(editor);
+        }
     });
 
-    context.subscriptions.push(disposable);
+    let selectionChangeDisposable = vscode.window.onDidChangeTextEditorSelection((event) => {
+        const editor = event.textEditor;
+        updateOutput(editor);
+    });
+
+    context.subscriptions.push(disposable, selectionChangeDisposable);
+}
+
+function updateOutput(editor: vscode.TextEditor) {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => {
+        const currentLine = editor.selection.active.line;
+        const currentLineText = editor.document.lineAt(currentLine).text.trim();
+        if ((currentLineText.startsWith('print(') || 
+            (/\w+\s*\(.*\)/.test(currentLineText) && !currentLineText.startsWith('def '))) &&
+            !currentLineText.startsWith('for ') && !currentLineText.startsWith('while ') && 
+            !currentLineText.startsWith('if ') && !currentLineText.startsWith('elif ') && 
+            !currentLineText.startsWith('else:')) {
+            const documentText = editor.document.getText();
+            runPythonCode(documentText, editor, currentLine);
+        } else {
+            clearOutput(editor);
+        }
+    }, 300);
+}
+
+// Function to clear the output decoration
+function clearOutput(editor: vscode.TextEditor) {
+    if (currentDecorationType) {
+        editor.setDecorations(currentDecorationType, []);
+        currentDecorationType.dispose();
+        currentDecorationType = undefined;
+    }
 }
 
 // Function to run Python code and display results inline
-function runPythonCode(code: string, editor: vscode.TextEditor) {
-    if (!code.trim()) {
-        // Do nothing if the document is empty or contains only whitespace
+function runPythonCode(code: string, editor: vscode.TextEditor, currentLine: number) {
+    const lines = code.split('\n');
+    const currentLineText = lines[currentLine].trim();
+    if (!currentLineText) {
         return;
     }
 
-    // Extract the relevant code snippet (current line or selection)
-    const cursorPosition = editor.selection.active;
-	let linesAboveCursor = [];
+    // Prepare the code to execute
+    const codeToExecute = lines.slice(0, currentLine + 1).join('\n') + '\n';
+    const tempFilePath = path.join(__dirname, 'temp.py');
+    fs.writeFileSync(tempFilePath, codeToExecute);
 
-	// Temporary solution to get the code snippet above the cursor 
-	// But only for the current function
-	for (let i = 0; i <= cursorPosition.line; i++) {
-		const lineText = editor.document.lineAt(i).text;
-		const functions = lineText.match(/^\s*def\s+\w+\s*\(.*\)\s*:/);
-		if (functions) {
-			linesAboveCursor = [];
-		} else {
-			linesAboveCursor.push(lineText.trim());
-		}
-	}
+    // Execute the code up to the current line
+    exec(`python3 "${tempFilePath}"`, (error, stdout, stderr) => {
+        if (error || stderr) {
+            let errorMessage = stderr || (error ? error.message : '');
+            // Check if the error is a NameError and format it accordingly
+            if (errorMessage.includes('NameError:')) {
+                const match = errorMessage.match(/NameError: name '(\w+)' is not defined/);
+                if (match) {
+                    errorMessage = `NameError: name '${match[1]}' is not defined`;
+                }
+            }
+            displayInlineOutput(errorMessage, editor, currentLine);
+        } else {
+            // Split the output and get the last non-empty line
+            const outputLines = stdout.trim().split('\n');
+            const lastOutput = outputLines[outputLines.length - 1];
+            displayInlineOutput(lastOutput, editor, currentLine);
+        }
 
-	// Check if the line that the cursor is on is empty
-    const currentLineText = editor.document.lineAt(cursorPosition.line).text;
-	let isEmpty = false;
-    if (!currentLineText.trim()) {
-        isEmpty = true;
-		displayInlineOutput("", editor);
-    } else {
-		const codeSnippet = linesAboveCursor.join('\n');
-	
-		const functionMatch = codeSnippet.match(/def\s+(\w+)\s*\(.*\)\s*:/);
-		if (functionMatch) {
-			const functionName = functionMatch[1];
-			//console.log(functionName);
-		}
-		// Check if the code snippet is multi-line
-		if (codeSnippet.includes('\n')) {
-			// Write the code snippet to a temporary file
-			const tempFilePath = path.join(__dirname, 'temp.py');
-			fs.writeFileSync(tempFilePath, codeSnippet);
-	
-			// Execute the code snippet from the temporary file
-			exec(`python3 "${tempFilePath}"`, (error, stdout, stderr) => {
-				if (error || stderr) {
-					displayInlineOutput(stderr || (error ? error.message : ''), editor);
-				} else {
-					displayInlineOutput(stdout, editor);
-				}
-	
-				// Clean up the temporary file
-				fs.unlinkSync(tempFilePath);
-			});
-		} else {
-		// Execute the single-line code snippet
-			const escapedCodeSnippet = codeSnippet.replace(/^\s+/gm, '\t').replace(/"/g, "'");
-			const command = `python3 -c "${escapedCodeSnippet.trim()}"`;
-			exec(command, (error, stdout, stderr) => {
-				if (error || stderr) {
-					const errorMessage = stderr.split('\n').filter(line => line.trim() !== '').pop() || (error ? error.message : '');
-					displayInlineOutput(errorMessage, editor);
-				} else {
-					displayInlineOutput(stdout, editor);
-				}
-			});
-		}
-	}
+        // Clean up the temporary file
+        fs.unlinkSync(tempFilePath);
+    });
 }
 
 // Function to display inline results in the editor
-function displayInlineOutput(output: string, editor: vscode.TextEditor) {
-    const cursorPosition = editor.selection.active;
-	const line = editor.document.lineAt(cursorPosition.line);
-    const endOfLine = line.range.end;
-    const range = new vscode.Range(endOfLine, endOfLine);
+function displayInlineOutput(output: string, editor: vscode.TextEditor, currentLine: number) {
+    if (!output.trim()) {
+        return;
+    }
 
-	// Split the output by newlines and filter out empty lines
-	const outputLines = output.split('\n').filter(line => line.trim() !== '');
-	const mostRecentOutput = outputLines.pop() || '';
+    const currentLineText = editor.document.lineAt(currentLine).text;
+    const decorations: vscode.DecorationOptions[] = [{
+        range: new vscode.Range(currentLine, currentLineText.length, currentLine, currentLineText.length),
+        renderOptions: {
+            after: {
+                contentText: ` # ${output.trim()}`,
+                color: 'grey'
+            }
+        }
+    }];
 
     // Clear the previous decoration if it exists
     if (currentDecorationType) {
@@ -117,30 +113,10 @@ function displayInlineOutput(output: string, editor: vscode.TextEditor) {
     }
 
     // Define a new decoration type with greyed-out text
-    currentDecorationType = vscode.window.createTextEditorDecorationType({
-        after: {
-            contentText: ` # ${mostRecentOutput.trim()}`,
-            color: 'grey',
-            margin: '0 0 0 1em'
-        }
-    });
+    currentDecorationType = vscode.window.createTextEditorDecorationType({});
 
-    // Create a decoration for the current line at the cursor position
-    const decoration = {
-        range: range,
-        renderOptions: {
-            after: {
-                contentText: ` # ${mostRecentOutput.trim()}`,
-                color: 'grey'
-            }
-        }
-    };
-	if (output !== "") {
-    // Apply the decoration to the editor
-    editor.setDecorations(currentDecorationType, [decoration]);
-	} else {
-		editor.setDecorations(currentDecorationType, []);
-	}
+    // Apply the decorations
+    editor.setDecorations(currentDecorationType, decorations);
 }
 
 function deactivate() {
